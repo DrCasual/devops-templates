@@ -1,0 +1,33 @@
+# Reusable: create a GitHub Release for the pushed version tag, with release notes
+# generated from the merged pull requests (grouped by .github/release.yml in the caller).
+name: github-release
+
+on:
+  workflow_call:
+    inputs:
+      notes-prefix:
+        description: Text placed above the generated notes (markdown). Optional.
+        type: string
+        default: ""
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREFIX: ${{ inputs.notes-prefix }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists; leaving it as is."
+            exit 0
+          fi
+          args=(--verify-tag --generate-notes --title "$GITHUB_REF_NAME")
+          # v1.2.0-rc.1 and similar are published as pre-releases
+          [[ "$GITHUB_REF_NAME" == *-* ]] && args+=(--prerelease)
+          [ -n "$PREFIX" ] && args+=(--notes "$PREFIX")
+          gh release create "$GITHUB_REF_NAME" "${args[@]}"

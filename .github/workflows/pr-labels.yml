@@ -1,0 +1,29 @@
+# Reusable: label a pull request from its branch prefix, so release notes group it.
+#   feature/… → feature   fix/… → fix   chore/… docs/… ci/… → chore
+name: pr-labels
+
+on:
+  workflow_call:
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Label from branch name
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.head_ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          case "$BRANCH" in
+            feature/*|feat/*) label=feature; color=1d76db ;;
+            fix/*|hotfix/*)   label=fix;     color=d73a4a ;;
+            chore/*|docs/*|ci/*|refactor/*|deps/*) label=chore; color=cfd3d7 ;;
+            *) echo "No label for branch $BRANCH"; exit 0 ;;
+          esac
+          gh label create "$label" --color "$color" --force >/dev/null
+          gh pr edit "$PR" --add-label "$label"

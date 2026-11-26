@@ -1,0 +1,47 @@
+name: Compose deploy
+description: Deploy a Docker Compose app on this (self-hosted) machine with backup, health check and automatic rollback.
+
+inputs:
+  deploy-dir:
+    description: Folder on the server with .env, data and the running stack.
+    required: true
+  image:
+    description: Full image reference to deploy.
+    required: true
+  compose-file:
+    description: Compose file in the repository checkout, copied to deploy-dir/compose.yaml.
+    required: true
+  service:
+    description: Service in the compose file that runs the image.
+    default: app
+  health-url:
+    description: URL that must answer 2xx after the deploy.
+    required: true
+  health-expect:
+    description: Text the health response must contain (for example the commit sha).
+    default: ""
+  health-timeout:
+    description: Seconds to wait for a healthy app.
+    default: "120"
+  backup-command:
+    description: Command run in deploy-dir before deploying, for example a database dump into backups/.
+    default: ""
+  keep-backups:
+    description: Number of files to keep in deploy-dir/backups.
+    default: "14"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        DEPLOY_DIR: ${{ inputs.deploy-dir }}
+        IMAGE: ${{ inputs.image }}
+        COMPOSE_SRC: ${{ github.workspace }}/${{ inputs.compose-file }}
+        SERVICE: ${{ inputs.service }}
+        HEALTH_URL: ${{ inputs.health-url }}
+        HEALTH_EXPECT: ${{ inputs.health-expect }}
+        HEALTH_TIMEOUT: ${{ inputs.health-timeout }}
+        BACKUP_CMD: ${{ inputs.backup-command }}
+        KEEP_BACKUPS: ${{ inputs.keep-backups }}
+      run: bash "${{ github.action_path }}/deploy.sh"

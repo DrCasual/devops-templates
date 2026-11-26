@@ -1,0 +1,92 @@
+# Reusable: deploy an image with Docker Compose on a self-hosted runner
+# (backup → pull → up → health check → automatic rollback).
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Name used in logs and for the concurrency lock, for example staging or production.
+        type: string
+        required: true
+      image:
+        description: Full image reference to deploy.
+        type: string
+        required: true
+      runs-on:
+        description: JSON list of runner labels.
+        type: string
+        default: '["self-hosted", "linux"]'
+      deploy-dir:
+        type: string
+        required: true
+      compose-file:
+        type: string
+        default: deploy/compose.yaml
+      service:
+        type: string
+        default: app
+      health-url:
+        type: string
+        required: true
+      health-expect:
+        description: Text the health response must contain. Default the commit sha.
+        type: string
+        default: ""
+      health-timeout:
+        type: string
+        default: "120"
+      backup-command:
+        type: string
+        default: ""
+      keep-backups:
+        type: string
+        default: "14"
+      url:
+        description: Public URL, shown in the run summary.
+        type: string
+        default: ""
+
+jobs:
+  deploy:
+    name: deploy (${{ inputs.environment }})
+    runs-on: ${{ fromJSON(inputs.runs-on) }}
+    concurrency:
+      group: deploy-${{ github.repository }}-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: DrCasual/devops-templates/actions/compose-deploy@v1
+        with:
+          deploy-dir: ${{ inputs.deploy-dir }}
+          image: ${{ inputs.image }}
+          compose-file: ${{ inputs.compose-file }}
+          service: ${{ inputs.service }}
+          health-url: ${{ inputs.health-url }}
+          health-expect: ${{ inputs.health-expect || github.sha }}
+          health-timeout: ${{ inputs.health-timeout }}
+          backup-command: ${{ inputs.backup-command }}
+          keep-backups: ${{ inputs.keep-backups }}
+
+      - name: Summary
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          IMAGE: ${{ inputs.image }}
+          URL: ${{ inputs.url }}
+        run: |
+          {
+            echo "### Deployed to $ENVIRONMENT"
+            echo "- Image: \`$IMAGE\`"
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+            [ -n "$URL" ] && echo "- Live: $URL"
+          } >> "$GITHUB_STEP_SUMMARY"

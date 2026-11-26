@@ -1,0 +1,54 @@
+# Reusable: install a Python project, lint it with ruff and run its tests.
+name: ci-python
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: "3.12"
+      working-directory:
+        type: string
+        default: "."
+      requirements:
+        description: Requirements file(s), space separated, relative to working-directory.
+        type: string
+        default: requirements.txt
+      lint-command:
+        description: Lint command. Empty to skip.
+        type: string
+        default: ruff check .
+      test-command:
+        description: Test command, for example "pytest -q". Empty to skip.
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+      - name: Install
+        env:
+          REQUIREMENTS: ${{ inputs.requirements }}
+        run: |
+          python -m pip install --upgrade pip ruff
+          for f in $REQUIREMENTS; do pip install -r "$f"; done
+      - name: Compile
+        run: python -m compileall -q .
+      - name: Lint
+        if: inputs.lint-command != ''
+        run: ${{ inputs.lint-command }}
+      - name: Test
+        if: inputs.test-command != ''
+        run: ${{ inputs.test-command }}
