@@ -28,32 +28,36 @@ Write short messages in the imperative: "Add claim expiry to send screen", not "
 
 ## Releases
 
-Versions follow [Semantic Versioning](https://semver.org): `vMAJOR.MINOR.PATCH`.
+Apps use **calendar versions** (CalVer): `vYEAR.MONTH.COUNTER`.
 
-- **PATCH** (`v1.4.1`): fixes only.
-- **MINOR** (`v1.5.0`): new features, backwards compatible.
-- **MAJOR** (`v2.0.0`): breaking changes, including anything that needs manual work on the server (new `.env` values, a data migration).
+- `v2026.11.0` is the first release in November 2026.
+- `v2026.11.1` is the next release or a hotfix in the same month.
+- `v2027.1.0` is the first release in January. Months have no leading zero, so every tool still reads it as an ordinary version number.
+
+The number says *when* a version shipped, which is what matters for an app people simply use. There is no "is this major or minor?" to decide, and no "are we 1.0 yet?". Anything that needs manual work on the server (a new `.env` value, a data migration) goes in the PR description, so it shows up in the release notes.
+
+Shared building blocks that other repos depend on, such as devops-templates itself, use [Semantic Versioning](https://semver.org) instead (`v1`, `v2`). There, a breaking change really means something for the callers.
 
 Go live by tagging the commit on `main` that is on staging and approved:
 
 ```bash
 git switch main && git pull
-git tag v1.5.0
-git push origin v1.5.0
+git tag v2026.11.0
+git push origin v2026.11.0
 ```
 
-The pipeline then gives that exact staging image the version tag, deploys it to production with a backup first, and publishes a GitHub Release with the notes grouped by label. Release candidates (`v1.5.0-rc.1`) follow the same path and are marked as pre-releases.
+The pipeline then gives that exact staging image the version tag, deploys it to production with a backup first, and publishes a GitHub Release with the notes grouped by label. Release candidates (`v2026.11.0-rc.1`) follow the same path and are marked as pre-releases.
 
 ## Hotfix
 
-Usually a hotfix is just a `fix/` branch → PR → merge → tag a patch version.
+Usually a hotfix is just a `fix/` branch → PR → merge → tag the next counter (`v2026.11.1`).
 
 If `main` already holds work that may not go live yet, branch from the release tag instead:
 
 ```bash
-git switch -c fix/urgent-thing v1.5.0
+git switch -c fix/urgent-thing v2026.11.0
 # fix, commit, push, and let CI run on the PR without merging
-git tag v1.5.1 && git push origin v1.5.1   # tag the fix commit itself
+git tag v2026.11.1 && git push origin v2026.11.1   # tag the fix commit itself
 ```
 
 Then merge the PR into `main` so the fix is not lost. The pipeline builds the image for that commit, because staging never had it, and deploys it to production.
