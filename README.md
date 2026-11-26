@@ -7,16 +7,16 @@ Projects don't copy these files. They call them in a few lines, so an improvemen
 ## The flow
 
 ```
-feature/… ──PR──▶ main ──────────────────▶ tag v1.4.0
+feature/… ──PR──▶ main ──────────────────▶ tag v2026.11.0
    │                │                          │
-   CI               build image sha-abc1234    promote sha-abc1234 → v1.4.0 + latest
+   CI               build image sha-abc1234    promote sha-abc1234 → v2026.11.0 + latest
                     deploy → staging           deploy → production
                                                GitHub Release with notes
 ```
 
 - **Pull request:** CI runs (lint, typecheck, tests, Docker build with smoke test). Nothing is pushed.
 - **Merge to `main`:** the image is built once, tagged `sha-<7 chars>`, pushed to GHCR and deployed to staging.
-- **Version tag (`v1.4.0`):** the exact image that ran on staging gets the version tag and goes to production. No rebuild.
+- **Version tag (`v2026.11.0`, calendar versions):** the exact image that ran on staging gets the version tag and goes to production. No rebuild.
 
 Branching and release conventions are in [docs/conventions.md](docs/conventions.md). Server setup is in [docs/server-setup.md](docs/server-setup.md).
 
