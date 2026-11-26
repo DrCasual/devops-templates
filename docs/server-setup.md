@@ -82,6 +82,13 @@ sudo certbot --nginx -d $HOST
 
 Add an A record for the hostname at the DNS provider first, pointing to the same IP as the other sites.
 
+**On your Mac (and other machines at home):** the home router can't reach its own public IP from inside (no NAT loopback). The sites on the home server therefore work at home only through a line in `/etc/hosts`. Without that line, a new hostname works on mobile data but times out on the home Wi-Fi.
+
+**Terminal 1**
+```bash
+echo "192.168.0.10 staging.APP.example.be" | sudo tee -a /etc/hosts && sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+```
+
 ## Useful commands on the server
 
 ```bash
