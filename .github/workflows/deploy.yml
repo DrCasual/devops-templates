@@ -46,6 +46,12 @@ on:
         description: Public URL, shown in the run summary.
         type: string
         default: ""
+      latest-only:
+        description: >-
+          Branch name (e.g. main). If set, the deploy is skipped when that branch has already moved past this
+          commit, so two quick merges never end with the older one deployed last. Leave empty for releases.
+        type: string
+        default: ""
 
 jobs:
   deploy:
@@ -60,13 +66,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Is this still the newest commit?
+        id: latest
+        if: inputs.latest-only != ''
+        env:
+          BRANCH: ${{ inputs.latest-only }}
+        run: |
+          head="$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
+          if [ -n "$head" ] && [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::$BRANCH has moved on to ${head::7}; its own run deploys that. Skipping ${GITHUB_SHA::7}."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: docker/login-action@v3
+        if: steps.latest.outputs.skip != 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: DrCasual/devops-templates/actions/compose-deploy@v1
+        if: steps.latest.outputs.skip != 'true'
         with:
           deploy-dir: ${{ inputs.deploy-dir }}
           image: ${{ inputs.image }}
@@ -79,6 +99,7 @@ jobs:
           keep-backups: ${{ inputs.keep-backups }}
 
       - name: Summary
+        if: steps.latest.outputs.skip != 'true'
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           IMAGE: ${{ inputs.image }}

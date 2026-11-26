@@ -30,7 +30,7 @@ Call them with `uses: DrCasual/devops-templates/.github/workflows/<file>@v1`.
 | `ci-node.yml` | `npm ci`, typecheck, lint, test, build | `node-version`, `working-directory`, `*-command` |
 | `docker-image.yml` | build image, optional smoke test, optional push to GHCR as `sha-<7>` | `push`, `extra-tags`, `smoke-command`, `build-args` |
 | `promote-image.yml` | add release tags to the image of this commit (builds it if missing) | `tags` (default: git tag + `latest`) |
-| `deploy.yml` | deploy on a self-hosted runner: backup → pull → up → health check → rollback | `environment`, `image`, `deploy-dir`, `health-url`, `backup-command`, `runs-on` |
+| `deploy.yml` | deploy on a self-hosted runner: backup → pull → up → health check → rollback | `environment`, `image`, `deploy-dir`, `health-url`, `backup-command`, `runs-on`, `latest-only` (skip when the branch already moved on) |
 | `github-release.yml` | GitHub Release with generated notes; `-rc` tags become pre-releases | `notes-prefix` |
 | `pr-labels.yml` | label PRs `feature` / `fix` / `chore` from the branch prefix | — |
 
